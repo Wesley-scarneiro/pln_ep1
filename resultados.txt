@@ -1,0 +1,81 @@
+# Classe de textos
+1) arcaico x moderno
+2) complexo x simples
+3) literal x dinamico
+
+# Sem tratamento de textos e sem gridsearch
+1) Acurácia final no conjunto de teste: 0.8317
+2) Acurácia final no conjunto de teste: 0.8155
+3) Acurácia final no conjunto de teste: 0.8274
+
+
+# Com tratamento de textos e sem gridsearch
+1) Acurácia final no conjunto de teste: 0.8278 (-0.0039)
+2) Acurácia final no conjunto de teste: 0.8161 (+0.0006)
+3) Acurácia final no conjunto de teste: 0.8244 (-0.003)
+
+# Tratamento seletivo de textos e sem gridsearch
+1) Acurácia final no conjunto de teste: 0.8317
+2) Acurácia final no conjunto de teste: 0.8161 (+0.0006)
+3) Acurácia final no conjunto de teste: 0.8274
+
+# Tratamento seletivo de textos e com gridsearch v1
+1) Acurácia final no conjunto de teste: 0.8441
+	CorpusParam(path='corpus/train_arcaico_moderno.csv', 
+                clean=False,
+                sublinear_tf=True, 
+                min_df=3, 
+                ngram_range=(1, 2), 
+                max_features=30050)
+
+	 
+2) Acurácia final no conjunto de teste:  0.8389
+	CorpusParam(path='corpus/train_complexo_simples.csv', 
+                clean=False,
+                sublinear_tf=True, 
+                min_df=3, 
+                ngram_range=(1, 4), 
+                max_features=30000)
+3) Acurácia final no conjunto de teste: 0.8444
+    CorpusParam(path='corpus/train_literal_dinamico.csv', 
+                clean=False,
+                sublinear_tf=True, 
+                min_df=4, 
+                ngram_range=(1, 3), 
+                max_features=30300)
+				
+# Resultado final
+======================================================================
+Corpus atual: train_arcaico_moderno.csv
+======================================================================
+--- Baseline ---
+Acurácia: 0.50
+
+=== Validação Cruzada (10 folds) ===
+
+--- LogisticRegression ---
+Acurácia média (10 folds): 0.8441 ± 0.0039
+
+======================================================================
+Corpus atual: train_complexo_simples.csv
+======================================================================
+--- Baseline ---
+Acurácia: 0.50
+
+=== Validação Cruzada (10 folds) ===
+
+--- LogisticRegression ---
+Acurácia média (10 folds): 0.8389 ± 0.0034
+
+======================================================================
+Corpus atual: train_literal_dinamico.csv
+======================================================================
+--- Baseline ---
+Acurácia: 0.50
+
+=== Validação Cruzada (10 folds) ===
+
+--- LogisticRegression ---
+Acurácia média (10 folds): 0.8444 ± 0.0039
+
+Execução finalizada para todos os corpus.
