@@ -1,3 +1,16 @@
+* Resultado sem pré-processamento dos textos
+=== Comparativo de Acurácia (AU) ===
+                 Modelo  Acurácia
+0    LogisticRegression  0.825321
+1                   SVC  0.823965
+2         XGBClassifier  0.771191
+3  KNeighborsClassifier  0.661215
+4       DummyClassifier  0.498554
+
+
+
+# Resultados somente com LogisticRegression
+
 # Classe de textos
 1) arcaico x moderno
 2) complexo x simples
