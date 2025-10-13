@@ -48,28 +48,6 @@ def read_csv(path: str, clean=False) -> pd.DataFrame:
         
     return df
 
-# Arquivo de textos
-corpus_list = [
-    CorpusParam(path='corpus/train_arcaico_moderno.csv', 
-                clean=False,
-                sublinear_tf=True, 
-                min_df=3, 
-                ngram_range=(1, 2), 
-                max_features=30050),
-    CorpusParam(path='corpus/train_complexo_simples.csv', 
-                clean=False,
-                sublinear_tf=True, 
-                min_df=3, 
-                ngram_range=(1, 4), 
-                max_features=30000),
-    CorpusParam(path='corpus/train_literal_dinamico.csv', 
-                clean=False,
-                sublinear_tf=True, 
-                min_df=4, 
-                ngram_range=(1, 3), 
-                max_features=30300)
-]
-
 def dummy_classifier(df: pd.DataFrame):
     X_train, X_test, y_train, y_test = train_test_split(
         df['text'], 
@@ -90,30 +68,36 @@ models = {
     "LogisticRegression": LogisticRegression()
 }
 
-# Treinamento dos modelos para cada corpus
-for corpus in corpus_list:
-    print("\n" + "=" * 70)
-    print(f"Corpus atual: {corpus.name}")
-    print("=" * 70)
+# Treina um modelo de LogisticRegression
+def logistic_regression(corpus_list: list[CorpusParam]):
+    for corpus in corpus_list:
+        print("\n" + "=" * 70)
+        print(f"Corpus atual: {corpus.name}")
+        print("=" * 70)
 
-    # Carrega os dados
-    df = read_csv(corpus.path, clean=corpus.clean)
-    X_text = df['text'].values 
+        # Carrega os dados
+        df = read_csv(corpus.path, clean=corpus.clean)
+        X_text = df['text'].values 
 
-    # Baseline
-    dummy_classifier(df)
+        # Baseline
+        dummy_classifier(df)
 
-    # Codificação das classes
-    le = LabelEncoder()
-    y = le.fit_transform(df['style'])
+        # Codificação das classes
+        le = LabelEncoder()
+        y = le.fit_transform(df['style'])
 
-    # Avaliação com 10-fold cross-validation 
-    print("\n=== Validação Cruzada (10 folds) ===")
-    kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
-    results = []
+        # Avaliação com 10-fold cross-validation 
+        print("\n=== Validação Cruzada (10 folds) ===")
+        kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+        results = []
 
-    for name, model in models.items():
-        print(f"\n--- {name} ---")
+        # Treinamento do modelo
+        print(f"\n--- LogisticRegression ---")
+        model = LogisticRegression(
+            C= corpus.logreg_C,
+            penalty= corpus.penalty,
+            solver= corpus.logreg_solver
+        )
         scores = []
         for train_index, test_index in kfold.split(X_text, y):
 
@@ -123,23 +107,58 @@ for corpus in corpus_list:
             
             # Vetorização do texto
             vectorizer = TfidfVectorizer(
-                sublinear_tf=corpus.sublinear_tf,
-                min_df=corpus.min_df,
-                ngram_range=corpus.ngram_range,
-                max_features=corpus.max_features
+                sublinear_tf=corpus.sublinear, # True: resuz o impacto de palavras muito repetidas
+                min_df=corpus.min_df, # Define a frequência mínima de um termo para ser incluído no vocabulário
+                ngram_range=corpus.ngram_range, # Define a quantidade de n-gramas
+                max_features=corpus.max_features # Limita o tamanho máximo do vocabulário
             )
             X_train_vec = vectorizer.fit_transform(X_train_text)
             X_test_vec = vectorizer.transform(X_test_text)
             
-            # 4. Treinar e avaliar o modelo
+            # Treinar e avaliar o modelo
             model.fit(X_train_vec, y_train)
             score = model.score(X_test_vec, y_test)
             scores.append(score)
 
         mean_acc = np.mean(scores)
         std_acc = np.std(scores)
-
         print(f"Acurácia média (10 folds): {mean_acc:.4f} ± {std_acc:.4f}")
-        results.append((name, mean_acc, std_acc))
+        results.append(('LogisticRegression', mean_acc, std_acc))
+        
+    return model
 
-print("\nExecução finalizada para todos os corpus.")
+def main():
+    # Arquivo de textos
+    corpus_list = [
+        CorpusParam(path='corpus/train_arcaico_moderno.csv', 
+                    clean=False,
+                    sublinear=True, 
+                    min_df=3, 
+                    ngram_range=(1, 2), 
+                    max_features=60000,
+                    logreg_c = 7.6178,
+                    penalty = 'l2',
+                    solver = 'saga'),
+        CorpusParam(path='corpus/train_complexo_simples.csv', 
+                    clean=False,
+                    sublinear=True, 
+                    min_df=4, 
+                    ngram_range=(1, 3), 
+                    max_features=None,
+                    logreg_c = 7.7324,
+                    penalty = 'l2',
+                    solver = 'saga'),
+        CorpusParam(path='corpus/train_literal_dinamico.csv', 
+                    clean=False,
+                    sublinear=True, 
+                    min_df=1, 
+                    ngram_range=(1, 3), 
+                    max_features=50000,
+                    logreg_c = 5.6427,
+                    penalty = 'l2',
+                    solver = 'saga')
+    ]
+    model = logistic_regression(corpus_list)
+
+if __name__ == '__main__':
+    main()

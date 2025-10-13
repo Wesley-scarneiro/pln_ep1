@@ -67,7 +67,7 @@ Acurácia: 0.50
 === Validação Cruzada (10 folds) ===
 
 --- LogisticRegression ---
-Acurácia média (10 folds): 0.8441 ± 0.0039
+Acurácia média (10 folds): 0.8544 ± 0.0041
 
 ======================================================================
 Corpus atual: train_complexo_simples.csv
@@ -78,7 +78,7 @@ Acurácia: 0.50
 === Validação Cruzada (10 folds) ===
 
 --- LogisticRegression ---
-Acurácia média (10 folds): 0.8389 ± 0.0034
+Acurácia média (10 folds): 0.8484 ± 0.0026
 
 ======================================================================
 Corpus atual: train_literal_dinamico.csv
@@ -89,6 +89,4 @@ Acurácia: 0.50
 === Validação Cruzada (10 folds) ===
 
 --- LogisticRegression ---
-Acurácia média (10 folds): 0.8444 ± 0.0039
-
-Execução finalizada para todos os corpus.
+Acurácia média (10 folds): 0.8507 ± 0.0054
