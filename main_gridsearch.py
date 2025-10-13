@@ -89,10 +89,10 @@ def run_gridsearch(corpus_list: list[tuple[str, bool, str]]):
         best_model, best_params, best_score = randomized_search_tfidf_logreg(df)
 
         results.append({
-            'corpus': corpus.name,
+            'corpus': corpus[2],
             'melhores_parametros': best_params,
             'acuracia_media': best_score,
-            'clean': corpus.clean
+            'clean': corpus[1]
         })
 
     # Salva resultados
