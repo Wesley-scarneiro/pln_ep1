@@ -1,20 +1,17 @@
 import pandas as pd
 import re
 import unicodedata
-import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import cross_val_score, StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report, accuracy_score
-
-from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 from sklearn.dummy import DummyClassifier
 from sklearn.metrics import classification_report, accuracy_score
-
 from corpusParams import CorpusParam
+import numpy as np
 
 """
     Trabalho de PLN — Classificação de textos
@@ -62,70 +59,111 @@ def dummy_classifier(df: pd.DataFrame):
     print("--- Baseline ---")
     accuracy = accuracy_score(y_test, y_pred_baseline)
     print(f"Acurácia: {accuracy:.2f}")
-
-# Definição dos modelos
-models = {
-    "LogisticRegression": LogisticRegression()
-}
-
-# Treina um modelo de LogisticRegression
-def logistic_regression(corpus_list: list[CorpusParam]):
+        
+def run_logistic_regression(corpus_list: list['CorpusParam']) -> None:
+    """
+    Cria o modelo de Regressão Logística e o vetorizador TF-IDF com base nos parâmetros do corpus,
+    treina o modelo com 70% dos dados e testa com 30%, exibindo o relatório de acurácia.
+    """
     for corpus in corpus_list:
         print("\n" + "=" * 70)
-        print(f"Corpus atual: {corpus.name}")
+        print(f"Corpus atual: {corpus.path}")
         print("=" * 70)
 
         # Carrega os dados
         df = read_csv(corpus.path, clean=corpus.clean)
-        X_text = df['text'].values 
 
         # Baseline
         dummy_classifier(df)
 
+        X_text = df['text'].values
+        y_text = df['style'].values
+
         # Codificação das classes
         le = LabelEncoder()
-        y = le.fit_transform(df['style'])
+        y = le.fit_transform(y_text)
 
-        # Avaliação com 10-fold cross-validation 
-        print("\n=== Validação Cruzada (10 folds) ===")
-        kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
-        results = []
-
-        # Treinamento do modelo
-        print(f"\n--- LogisticRegression ---")
-        model = LogisticRegression(
-            C= corpus.logreg_C,
-            penalty= corpus.penalty,
-            solver= corpus.logreg_solver
+        # Divide os dados (70% treino / 30% teste)
+        X_train_text, X_test_text, y_train, y_test = train_test_split(
+            X_text, y, test_size=0.3, random_state=42, stratify=y
         )
-        scores = []
-        for train_index, test_index in kfold.split(X_text, y):
 
-            # Divisão dos dados de trieno e teste
-            X_train_text, X_test_text = X_text[train_index], X_text[test_index]
-            y_train, y_test = y[train_index], y[test_index]
-            
-            # Vetorização do texto
+        # Vetorização do texto (ajuste apenas no treino)
+        vectorizer = TfidfVectorizer(
+            sublinear_tf=corpus.sublinear,
+            min_df=corpus.min_df,
+            ngram_range=corpus.ngram_range,
+            max_features=corpus.max_features
+        )
+        X_train_vec = vectorizer.fit_transform(X_train_text)
+        X_test_vec = vectorizer.transform(X_test_text)
+
+        # Criação e treinamento do modelo
+        model = LogisticRegression(
+            C=corpus.logreg_C,
+            penalty=corpus.penalty,
+            solver=corpus.solver,
+        )
+        model.fit(X_train_vec, y_train)
+
+        # Predição e relatório de desempenho
+        y_pred = model.predict(X_test_vec)
+        acc = accuracy_score(y_test, y_pred)
+        print(f"\nAcurácia (dados de teste - 30%): {acc:.4f}")
+        print("\nRelatório por classe:")
+        print(classification_report(y_test, y_pred, target_names=le.classes_, digits=4))
+
+def crossval_accuracy(corpus_list: list['CorpusParam']):
+    """
+    Calcula a acurácia média em 10 folds para cada corpus usando Logistic Regression + TF-IDF.
+    """
+    for corpus in corpus_list:
+        print("\n" + "="*70)
+        print(f"Corpus atual: {corpus.path}")
+        print("="*70)
+        # Carrega os dados
+        df = read_csv(corpus.path, clean=corpus.clean)
+        X_text = df['text'].values
+        y_text = df['style'].values
+
+        # Codificação das classes
+        le = LabelEncoder()
+        y = le.fit_transform(y_text)
+
+        # Definição da validação cruzada
+        kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+        scores = []
+
+        for train_idx, test_idx in kfold.split(X_text, y):
+            X_train_text, X_test_text = X_text[train_idx], X_text[test_idx]
+            y_train, y_test = y[train_idx], y[test_idx]
+
+            # Vetorização
             vectorizer = TfidfVectorizer(
-                sublinear_tf=corpus.sublinear, # True: resuz o impacto de palavras muito repetidas
-                min_df=corpus.min_df, # Define a frequência mínima de um termo para ser incluído no vocabulário
-                ngram_range=corpus.ngram_range, # Define a quantidade de n-gramas
-                max_features=corpus.max_features # Limita o tamanho máximo do vocabulário
+                sublinear_tf=corpus.sublinear,
+                min_df=corpus.min_df,
+                ngram_range=corpus.ngram_range,
+                max_features=corpus.max_features
             )
             X_train_vec = vectorizer.fit_transform(X_train_text)
             X_test_vec = vectorizer.transform(X_test_text)
-            
-            # Treinar e avaliar o modelo
+
+            # Modelo
+            model = LogisticRegression(
+                C=corpus.logreg_C,
+                penalty=corpus.penalty,
+                solver=corpus.solver,
+            )
             model.fit(X_train_vec, y_train)
-            score = model.score(X_test_vec, y_test)
-            scores.append(score)
+
+            # Avaliação
+            y_pred = model.predict(X_test_vec)
+            acc = accuracy_score(y_test, y_pred)
+            scores.append(acc)
 
         mean_acc = np.mean(scores)
         std_acc = np.std(scores)
         print(f"Acurácia média (10 folds): {mean_acc:.4f} ± {std_acc:.4f}")
-        results.append(('LogisticRegression', mean_acc, std_acc))
-        
-    return model
 
 def main():
     # Arquivo de textos
@@ -158,7 +196,8 @@ def main():
                     penalty = 'l2',
                     solver = 'saga')
     ]
-    model = logistic_regression(corpus_list)
+    crossval_accuracy(corpus_list)
+    run_logistic_regression(corpus_list)
 
 if __name__ == '__main__':
     main()

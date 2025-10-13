@@ -1,14 +1,12 @@
 import pandas as pd
 import re
 import unicodedata
-import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV
 from sklearn.preprocessing import LabelEncoder
 from sklearn.pipeline import Pipeline
 from scipy.stats import uniform, randint
-from corpusParams import CorpusParam
 
 def clean_text(text: str) -> str:
     """Remove acentos e pontuação básica."""

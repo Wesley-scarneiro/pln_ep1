@@ -58,5 +58,5 @@ class CorpusParam:
         return self.__logreg_C
     
     @property
-    def logreg_solver(self) -> str:
+    def solver(self) -> str:
         return self.__solver
