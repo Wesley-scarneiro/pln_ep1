@@ -8,7 +8,8 @@ class CorpusParam:
             max_features: int,
             logreg_c: float,
             penalty: str,
-            solver: str
+            solver: str,
+            path_test: str
             ):
         self.__name = path.split('/')[1]
         self.__path = path
@@ -20,6 +21,7 @@ class CorpusParam:
         self.__logreg_C = logreg_c
         self.__penalty = penalty
         self.__solver = solver
+        self.__path_test = path_test
 
     @property
     def name(self) -> str:
@@ -28,6 +30,14 @@ class CorpusParam:
     @property
     def path(self) -> str:
         return self.__path
+    
+    @property
+    def path_test(self) -> str:
+        return self.__path_test
+    
+    @property
+    def corpus_name_test(self) -> str:
+        return self.__path_test.split('/')[1].replace('.csv', '')
     
     @property
     def clean(self) -> bool:

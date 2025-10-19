@@ -12,6 +12,7 @@ from sklearn.dummy import DummyClassifier
 from sklearn.metrics import classification_report, accuracy_score
 from corpusParams import CorpusParam
 import numpy as np
+import pickle
 
 """
     Trabalho de PLN — Classificação de textos
@@ -36,7 +37,7 @@ def clean_text(text: str) -> str:
 
 # Carrega o CSV e faz o tratamento básico dos textos
 def read_csv(path: str, clean=False) -> pd.DataFrame:
-    df = pd.read_csv(path, sep=';')
+    df = pd.read_csv(path, sep=';', encoding='utf-8')
     df.dropna(subset=['text'], inplace=True)
     df['text'] = df['text'].apply(str.lower)
 
@@ -60,10 +61,11 @@ def dummy_classifier(df: pd.DataFrame):
     accuracy = accuracy_score(y_test, y_pred_baseline)
     print(f"Acurácia: {accuracy:.2f}")
         
-def run_logistic_regression(corpus_list: list['CorpusParam']) -> None:
+def run_logistic_regression(corpus_list: list['CorpusParam'], test_end=False) -> None:
     """
     Cria o modelo de Regressão Logística e o vetorizador TF-IDF com base nos parâmetros do corpus,
     treina o modelo com 70% dos dados e testa com 30%, exibindo o relatório de acurácia.
+    Após isso, salva os modelos.
     """
     for corpus in corpus_list:
         print("\n" + "=" * 70)
@@ -103,6 +105,7 @@ def run_logistic_regression(corpus_list: list['CorpusParam']) -> None:
             C=corpus.logreg_C,
             penalty=corpus.penalty,
             solver=corpus.solver,
+            random_state = 42
         )
         model.fit(X_train_vec, y_train)
 
@@ -112,6 +115,12 @@ def run_logistic_regression(corpus_list: list['CorpusParam']) -> None:
         print(f"\nAcurácia (dados de teste - 30%): {acc:.4f}")
         print("\nRelatório por classe:")
         print(classification_report(y_test, y_pred, target_names=le.classes_, digits=4))
+
+        # Realiza o teste final e salva resultados
+        if (test_end):
+            run_test_end(corpus, model, vectorizer, le)
+            print(f'Processado arquivo de testes - {corpus.path_test}')
+    
 
 def crossval_accuracy(corpus_list: list['CorpusParam']):
     """
@@ -165,6 +174,19 @@ def crossval_accuracy(corpus_list: list['CorpusParam']):
         std_acc = np.std(scores)
         print(f"Acurácia média (10 folds): {mean_acc:.4f} ± {std_acc:.4f}")
 
+def run_test_end(corpus, model, vectorizer, le):
+    df = read_csv(corpus.path_test, clean=corpus.clean)
+    X_test_text = df['text'].values
+    X_test_vec = vectorizer.transform(X_test_text)
+
+    y_pred = model.predict(X_test_vec)
+    y_labels = le.inverse_transform(y_pred)
+    df_result = pd.DataFrame({
+        'style': y_labels
+    })
+    df_result.to_csv(f'results/{corpus.corpus_name_test}.csv', index=False, encoding='utf-8')
+
+
 def main():
     # Arquivo de textos
     corpus_list = [
@@ -176,7 +198,8 @@ def main():
                     max_features=60000,
                     logreg_c = 7.6178,
                     penalty = 'l2',
-                    solver = 'saga'),
+                    solver = 'saga',
+                    path_test= 'test/test_arcaico_moderno.csv'),
         CorpusParam(path='corpus/train_complexo_simples.csv', 
                     clean=False,
                     sublinear=True, 
@@ -185,7 +208,8 @@ def main():
                     max_features=None,
                     logreg_c = 7.7324,
                     penalty = 'l2',
-                    solver = 'saga'),
+                    solver = 'saga',
+                    path_test= 'test/test_complexo_simples.csv'),
         CorpusParam(path='corpus/train_literal_dinamico.csv', 
                     clean=False,
                     sublinear=True, 
@@ -194,10 +218,11 @@ def main():
                     max_features=50000,
                     logreg_c = 5.6427,
                     penalty = 'l2',
-                    solver = 'saga')
+                    solver = 'saga',
+                    path_test= 'test/test_literal_dinamico.csv')
     ]
-    crossval_accuracy(corpus_list)
-    run_logistic_regression(corpus_list)
+    #crossval_accuracy(corpus_list)
+    run_logistic_regression(corpus_list, test_end=True)
 
 if __name__ == '__main__':
     main()
